@@ -65,3 +65,6 @@ references in `testdata/` were generated with the original code. These differenc
 ```sh
 go test ./...
 ```
+
+## AI Disclaimer
+This project has been built with the help of AI to reformat the original project [IF-Grad](https://github.com/chaotix1992/IF-Grad). The logic this project follows is the same as the original one, with an added GUI and executable files instead of CLI for easier usability.
