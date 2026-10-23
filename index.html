@@ -86,6 +86,12 @@
   #status { color: var(--muted); margin-top: 8px; min-height: 1.4em; white-space: pre-line; }
   a { color: var(--accent); }
   td a + a { margin-left: 8px; }
+  footer { padding: 0 20px 24px; color: var(--muted); }
+  footer .panel { display: grid; gap: 10px; }
+  footer p { margin: 0; }
+  #citation { color: var(--text); }
+  footer .links { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+  footer button { padding: 4px 10px; }
 </style>
 </head>
 <body>
@@ -166,6 +172,23 @@
   </section>
 </main>
 </div>
+
+<footer>
+  <section class="panel">
+    <h2>How to cite</h2>
+    <p id="citation">Happel, J. (2026). <i>IF-Grad Go: Fluorescent image gradient converter</i> (Version 0.1.0) [Computer software]. https://github.com/chaotix1992/IF-Grad-Go</p>
+    <div class="links">
+      <button id="copyCitation">Copy citation</button>
+      <a href="CITATION.cff" download>Download CITATION.cff</a>
+      <a href="https://github.com/chaotix1992/IF-Grad-Go">Source code on GitHub</a>
+      <a href="https://github.com/chaotix1992/IF-Grad">Original Python version</a>
+    </div>
+    <h2>AI disclaimer</h2>
+    <p>AI was used to help refactor the original Python code of IF-Grad into this version. No AI is used
+      when your images are recoloured or masked, or when histograms are generated: those steps are fixed,
+      deterministic calculations that run entirely in your browser.</p>
+  </section>
+</footer>
 
 <script>
 const $ = id => document.getElementById(id);
@@ -437,6 +460,16 @@ $('zip').onclick = async e => {
   a.download = 'ifgrad-results.zip';
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+
+$('copyCitation').onclick = async () => {
+  try {
+    await navigator.clipboard.writeText($('citation').textContent);
+    $('copyCitation').textContent = 'Copied';
+  } catch {
+    $('copyCitation').textContent = 'Copy failed, select the text instead';
+  }
+  setTimeout(() => { $('copyCitation').textContent = 'Copy citation'; }, 2000);
 };
 
 function status(msg) { $('status').textContent = msg; }
