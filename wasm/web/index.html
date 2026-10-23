@@ -1,0 +1,490 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IF-Grad</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #ffffff; --text: #1d2330; --muted: #677085;
+    --line: #dde1e8; --accent: #2f6fde; --accent-text: #fff; --danger: #c93838;
+    --well: #0b0d12;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12151b; --panel: #1b1f27; --text: #e4e7ee; --muted: #949cb0;
+      --line: #2c323d; --accent: #5b8ff0; --accent-text: #0c1220; --danger: #ef6b6b;
+      --well: #000;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  header { padding: 14px 20px; border-bottom: 1px solid var(--line); display: flex; align-items: baseline; gap: 12px; }
+  header h1 { margin: 0; font-size: 18px; }
+  header span { color: var(--muted); }
+  .layout { display: grid; grid-template-columns: 320px 1fr; gap: 16px; padding: 16px 20px; }
+  @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px; }
+  aside .panel + .panel, main .panel + .panel { margin-top: 16px; }
+  h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 10px; }
+  label { display: block; }
+  .field { margin-bottom: 14px; }
+  .field > .name { display: block; color: var(--muted); margin-bottom: 4px; }
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .seg label { flex: 1; text-align: center; padding: 6px 0; cursor: pointer; }
+  .seg input { display: none; }
+  .seg label:has(input:checked) { background: var(--accent); color: var(--accent-text); }
+  input[type=text], input[type=number], select {
+    width: 100%; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px;
+    background: var(--bg); color: var(--text); font: inherit;
+  }
+  .slider { display: flex; gap: 8px; align-items: center; }
+  .slider input[type=range] { flex: 1; }
+  .slider input[type=number] { width: 70px; }
+  .bar { height: 14px; border-radius: 3px; margin-top: 6px; image-rendering: pixelated; width: 100%; display: block; }
+  button {
+    font: inherit; padding: 8px 14px; border-radius: 6px; border: 1px solid var(--line);
+    background: var(--bg); color: var(--text); cursor: pointer;
+  }
+  button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); width: 100%; }
+  button:disabled { opacity: .5; cursor: default; }
+  #drop {
+    border: 2px dashed var(--line); border-radius: 8px; padding: 18px; text-align: center;
+    color: var(--muted); cursor: pointer;
+  }
+  #drop.over { border-color: var(--accent); color: var(--text); }
+  #files { list-style: none; margin: 10px 0 0; padding: 0; max-height: 240px; overflow-y: auto; }
+  #files li { display: flex; align-items: center; gap: 6px; padding: 5px 6px; border-radius: 5px; cursor: pointer; }
+  #files li.active { background: var(--bg); outline: 1px solid var(--accent); }
+  #files li .n { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #files li small { color: var(--muted); }
+  #files li button { padding: 0 6px; border: 0; background: none; color: var(--muted); }
+  .images { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 600px) { .images { grid-template-columns: 1fr; } }
+  figure { margin: 0; }
+  figcaption { color: var(--muted); margin-bottom: 6px; }
+  .well {
+    background: var(--well); border-radius: 6px; aspect-ratio: 1; display: flex;
+    align-items: center; justify-content: center; overflow: hidden;
+  }
+  .well img { max-width: 100%; max-height: 100%; }
+  .well .empty { color: #667; }
+  #hist { width: 100%; height: 140px; display: block; }
+  .stat { margin-top: 8px; color: var(--muted); }
+  .stat b { color: var(--text); }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 500; }
+  td.err { color: var(--danger); }
+  .row { display: flex; gap: 8px; }
+  .row > * { flex: 1; }
+  .check { display: flex; gap: 6px; align-items: center; margin-bottom: 14px; }
+  .hidden { display: none !important; }
+  #status { color: var(--muted); margin-top: 8px; min-height: 1.4em; white-space: pre-line; }
+  a { color: var(--accent); }
+  td a + a { margin-left: 8px; }
+  footer { padding: 0 20px 24px; color: var(--muted); }
+  footer .panel { display: grid; gap: 10px; }
+  footer p { margin: 0; }
+  #citation { color: var(--text); }
+  footer .links { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+  footer button { padding: 4px 10px; }
+</style>
+</head>
+<body>
+<header><h1>IF-Grad</h1><span>Fluorescence image gradient converter · runs in your browser, images are not uploaded</span></header>
+<div class="layout">
+<aside>
+  <section class="panel">
+    <h2>Images</h2>
+    <div id="drop">Drop images here or click to choose<br><small>PNG, JPEG, GIF, TIFF (8 or 16 bit)</small></div>
+    <input id="picker" type="file" multiple accept=".png,.jpg,.jpeg,.gif,.tif,.tiff" hidden>
+    <ul id="files"></ul>
+  </section>
+
+  <section class="panel">
+    <h2>Settings</h2>
+    <div class="field">
+      <span class="name">Mode</span>
+      <div class="seg">
+        <label><input type="radio" name="mode" value="recolor" checked>Recolor</label>
+        <label><input type="radio" name="mode" value="mask">Mask</label>
+      </div>
+    </div>
+    <div class="field">
+      <span class="name">Channel</span>
+      <div class="seg">
+        <label><input type="radio" name="channel" value="r">Red</label>
+        <label><input type="radio" name="channel" value="g" checked>Green</label>
+        <label><input type="radio" name="channel" value="b">Blue</label>
+        <label><input type="radio" name="channel" value="gray">Gray</label>
+      </div>
+    </div>
+    <div class="field">
+      <span class="name" id="minLabel">Minimum intensity</span>
+      <div class="slider">
+        <input id="min" type="range" min="0" max="255" value="0">
+        <input id="minNum" type="number" min="0" max="255" value="0">
+      </div>
+    </div>
+    <div class="field" id="gradientField">
+      <span class="name">Gradient</span>
+      <select id="gradient"></select>
+      <img id="bar" class="bar" alt="">
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Output</h2>
+    <div class="row">
+      <label class="field"><span class="name">Format</span>
+        <select id="format"><option value="tiff">TIFF</option><option value="png">PNG</option></select>
+      </label>
+    </div>
+    <label class="check"><input id="histogram" type="checkbox">Save histogram data (.tsv)</label>
+    <button id="convert" class="primary" disabled>Convert all</button>
+    <div id="status">Loading…</div>
+  </section>
+</aside>
+
+<main>
+  <section class="panel">
+    <div class="images">
+      <figure><figcaption id="origCap">Original</figcaption><div class="well" id="origWell"><span class="empty">No image selected</span></div></figure>
+      <figure><figcaption>Preview</figcaption><div class="well" id="prevWell"><span class="empty">—</span></div></figure>
+    </div>
+  </section>
+  <section class="panel">
+    <h2>Histogram <small>(log scale)</small></h2>
+    <canvas id="hist" width="1024" height="280"></canvas>
+    <div class="stat" id="stat"></div>
+  </section>
+  <section class="panel hidden" id="resultsPanel">
+    <h2>Results</h2>
+    <table>
+      <thead><tr><th>File</th><th>Output</th><th id="posHead">Positive</th></tr></thead>
+      <tbody id="results"></tbody>
+    </table>
+    <p><a href="#" id="zip">Download all as .zip</a></p>
+  </section>
+</main>
+</div>
+
+<footer>
+  <section class="panel">
+    <h2>How to cite</h2>
+    <p id="citation">Happel, J. (2026). <i>IF-Grad Go: Fluorescent image gradient converter</i> (Version 0.1.0) [Computer software]. https://github.com/chaotix1992/IF-Grad-Go</p>
+    <div class="links">
+      <button id="copyCitation">Copy citation</button>
+      <a href="CITATION.cff" download>Download CITATION.cff</a>
+      <a href="https://github.com/chaotix1992/IF-Grad-Go">Source code on GitHub</a>
+      <a href="https://github.com/chaotix1992/IF-Grad">Original Python version</a>
+    </div>
+    <h2>AI disclaimer</h2>
+    <p>AI was used to help refactor the original Python code of IF-Grad into this version. No AI is used
+      when your images are recoloured or masked, or when histograms are generated: those steps are fixed,
+      deterministic calculations that run entirely in your browser.</p>
+  </section>
+</footer>
+
+<script>
+const $ = id => document.getElementById(id);
+const files = [];           // {id, name, width, height, original (object URL)}
+let current = null;         // selected file id
+let nextFile = 1;
+let hist = null;            // histogram of current file/channel
+let barImg = new Image();
+const bars = {};            // gradient name -> object URL of its colour bar
+let resultURLs = [];        // object URLs of the last conversion's downloads
+
+const val = name => document.querySelector(`input[name=${name}]:checked`).value;
+const settings = () => ({
+  mode: val('mode'), channel: val('channel'), min: +$('min').value, gradient: $('gradient').value,
+});
+
+// --- worker ----------------------------------------------------------------
+// The Go code runs in worker.js; call(fn, ...args) invokes ifgrad[fn] there.
+const worker = new Worker('worker.js');
+const pending = new Map();
+let nextCall = 1;
+worker.onmessage = ({data: {id, value, error}}) => {
+  if (!id) { status(error); return; }
+  const p = pending.get(id);
+  pending.delete(id);
+  if (error === undefined) p.resolve(value); else p.reject(new Error(error));
+};
+function call(fn, ...args) {
+  const id = nextCall++;
+  const transfer = args.filter(a => a instanceof Uint8Array).map(a => a.buffer);
+  return new Promise((resolve, reject) => {
+    pending.set(id, {resolve, reject});
+    worker.postMessage({id, fn, args}, transfer);
+  });
+}
+
+const blobURL = (bytes, type = 'image/png') => URL.createObjectURL(new Blob([bytes], {type}));
+
+// --- files -----------------------------------------------------------------
+$('drop').onclick = () => $('picker').click();
+$('picker').onchange = e => { upload([...e.target.files]); e.target.value = ''; };
+$('drop').ondragover = e => { e.preventDefault(); $('drop').classList.add('over'); };
+$('drop').ondragleave = () => $('drop').classList.remove('over');
+$('drop').ondrop = e => { e.preventDefault(); $('drop').classList.remove('over'); upload([...e.dataTransfer.files]); };
+
+async function upload(list) {
+  if (!list.length) return;
+  const failed = [];
+  for (const [i, f] of list.entries()) {
+    status(`Loading ${i + 1} of ${list.length}…`);
+    const id = String(nextFile++);
+    try {
+      const r = await call('load', id, f.name, new Uint8Array(await f.arrayBuffer()));
+      files.push({id, name: f.name, width: r.width, height: r.height, original: blobURL(r.original)});
+      renderFiles();
+      if (!current) select(id);
+    } catch (e) {
+      failed.push(`${f.name}: ${e.message}`);
+    }
+  }
+  status(failed.join('\n'));
+}
+
+function renderFiles() {
+  const ul = $('files');
+  ul.replaceChildren(...files.map(f => {
+    const li = document.createElement('li');
+    li.className = f.id === current ? 'active' : '';
+    const n = document.createElement('span'); n.className = 'n'; n.textContent = f.name; n.title = f.name;
+    const s = document.createElement('small'); s.textContent = `${f.width}×${f.height}`;
+    const x = document.createElement('button'); x.textContent = '×'; x.title = 'Remove';
+    x.onclick = e => { e.stopPropagation(); removeFile(f.id); };
+    li.append(n, s, x);
+    li.onclick = () => select(f.id);
+    return li;
+  }));
+  $('convert').disabled = files.length === 0;
+}
+
+async function removeFile(id) {
+  await call('remove', id);
+  const [f] = files.splice(files.findIndex(f => f.id === id), 1);
+  URL.revokeObjectURL(f.original);
+  if (current === id) { current = null; if (files.length) select(files[0].id); else clearView(); }
+  renderFiles();
+}
+
+function select(id) {
+  current = id;
+  renderFiles();
+  const f = files.find(f => f.id === id);
+  $('origCap').textContent = `Original — ${f.name}`;
+  showImage('origWell', f.original);
+  loadHistogram();
+  updatePreview();
+}
+
+function clearView() {
+  $('origCap').textContent = 'Original';
+  $('origWell').innerHTML = '<span class="empty">No image selected</span>';
+  $('prevWell').innerHTML = '<span class="empty">—</span>';
+  setPreview(null);
+  hist = null; drawHistogram();
+}
+
+function showImage(wellId, src) {
+  const well = $(wellId);
+  let img = well.querySelector('img');
+  if (!img) { img = document.createElement('img'); well.replaceChildren(img); }
+  img.src = src;
+}
+
+// --- preview & histogram ---------------------------------------------------
+let timer, previewURL = null, previewBusy = false, previewAgain = false;
+function updatePreview() {
+  clearTimeout(timer);
+  timer = setTimeout(renderPreview, 120);
+  drawHistogram();
+}
+
+// renderPreview runs one preview at a time; changes made meanwhile are
+// rendered once it finishes.
+async function renderPreview() {
+  if (!current) return;
+  if (previewBusy) { previewAgain = true; return; }
+  previewBusy = true;
+  const id = current;
+  try {
+    const png = await call('preview', id, settings());
+    if (id === current) setPreview(blobURL(png));
+  } catch (e) {
+    status(e.message);
+  }
+  previewBusy = false;
+  if (previewAgain) { previewAgain = false; renderPreview(); }
+}
+
+function setPreview(url) {
+  if (url) showImage('prevWell', url);
+  if (previewURL) URL.revokeObjectURL(previewURL);
+  previewURL = url;
+}
+
+async function loadHistogram() {
+  if (!current) return;
+  const id = current, ch = val('channel');
+  const h = await call('histogram', id, ch);
+  if (id !== current || ch !== val('channel')) return;
+  hist = h;
+  drawHistogram();
+}
+
+function drawHistogram() {
+  const c = $('hist'), g = c.getContext('2d'), W = c.width, H = c.height, band = 24, h = H - band - 4;
+  const css = getComputedStyle(document.documentElement);
+  g.clearRect(0, 0, W, H);
+  const s = settings(), t = s.min, x = v => v / 256 * W;
+
+  // Colour band: what each intensity becomes with the current settings.
+  if (s.mode === 'mask') {
+    g.fillStyle = '#fff'; g.fillRect(0, H - band, x(t + 1), band);
+    g.fillStyle = '#000'; g.fillRect(x(t + 1), H - band, W - x(t + 1), band);
+    g.strokeStyle = css.getPropertyValue('--line'); g.strokeRect(0.5, H - band + .5, W - 1, band - 1);
+  } else if (barImg.complete && barImg.naturalWidth) {
+    g.imageSmoothingEnabled = false;
+    g.drawImage(barImg, 0, 0, 1, 1, 0, H - band, x(t), band);
+    g.drawImage(barImg, 0, 0, 256, 1, x(t), H - band, W - x(t), band);
+  }
+
+  if (hist) {
+    const max = Math.log1p(Math.max(...hist));
+    g.fillStyle = css.getPropertyValue('--muted');
+    hist.forEach((n, v) => {
+      const bh = Math.log1p(n) / max * h;
+      g.fillRect(x(v), h - bh, Math.ceil(W / 256), bh);
+    });
+  }
+  g.strokeStyle = css.getPropertyValue('--accent'); g.lineWidth = 2;
+  g.beginPath(); g.moveTo(x(t) + 1, 0); g.lineTo(x(t) + 1, H); g.stroke();
+
+  if (!hist) { $('stat').textContent = ''; return; }
+  const total = hist.reduce((a, b) => a + b, 0);
+  const above = hist.slice(s.mode === 'mask' ? t + 1 : t).reduce((a, b) => a + b, 0);
+  const pct = (above / total * 100).toFixed(2);
+  $('stat').innerHTML = s.mode === 'mask'
+    ? `Positive pixels (&gt; ${t}): <b>${above.toLocaleString()}</b> of ${total.toLocaleString()} (<b>${pct}%</b>)`
+    : `Pixels at or above minimum ${t}: <b>${pct}%</b>`;
+}
+
+// --- settings --------------------------------------------------------------
+function syncMode() {
+  const mask = val('mode') === 'mask';
+  $('gradientField').classList.toggle('hidden', mask);
+  $('minLabel').textContent = mask ? 'Threshold' : 'Minimum intensity';
+  updatePreview();
+}
+function syncGradient() {
+  barImg = new Image();
+  barImg.onload = drawHistogram;
+  barImg.src = $('bar').src = bars[$('gradient').value];
+  updatePreview();
+}
+document.querySelectorAll('input[name=mode]').forEach(i => i.onchange = syncMode);
+document.querySelectorAll('input[name=channel]').forEach(i => i.onchange = () => { loadHistogram(); updatePreview(); });
+$('min').oninput = () => { $('minNum').value = $('min').value; updatePreview(); };
+$('minNum').oninput = () => {
+  const v = Math.max(0, Math.min(255, parseInt($('minNum').value) || 0));
+  $('min').value = v; updatePreview();
+};
+$('gradient').onchange = syncGradient;
+
+// --- convert ---------------------------------------------------------------
+$('convert').onclick = async () => {
+  $('convert').disabled = true;
+  const opts = {...settings(), format: $('format').value, histogram: $('histogram').checked};
+  const batch = [...files], rows = [];
+  const t0 = performance.now();
+  resultURLs.forEach(u => URL.revokeObjectURL(u));
+  resultURLs = [];
+  await call('reset');
+  for (const [i, f] of batch.entries()) {
+    status(`Converting ${i + 1} of ${batch.length}…`);
+    try {
+      rows.push(await call('convert', f.id, opts));
+    } catch (e) {
+      rows.push({name: f.name, error: e.message});
+    }
+  }
+  $('convert').disabled = files.length === 0;
+  status(`Done in ${((performance.now() - t0) / 1000).toFixed(1)} s.`);
+  renderResults(rows, opts.mode === 'mask');
+};
+
+function renderResults(rows, mask) {
+  $('resultsPanel').classList.remove('hidden');
+  $('posHead').classList.toggle('hidden', !mask);
+  $('results').replaceChildren(...rows.map(r => {
+    const tr = document.createElement('tr');
+    const name = document.createElement('td'); name.textContent = r.name;
+    const out = document.createElement('td');
+    if (r.error) {
+      out.textContent = r.error; out.className = 'err';
+    } else {
+      out.append(downloadLink(r.output, r.data, 'application/octet-stream'));
+      if (r.histogram) out.append(downloadLink(r.histogram, r.histogramData, 'text/tab-separated-values'));
+    }
+    tr.append(name, out);
+    if (mask) {
+      const pos = document.createElement('td');
+      pos.textContent = r.error ? '' : `${r.positive.toLocaleString()} (${r.percent.toFixed(2)}%)`;
+      tr.append(pos);
+    }
+    return tr;
+  }));
+}
+
+function downloadLink(name, bytes, type) {
+  const a = document.createElement('a');
+  a.href = blobURL(bytes, type);
+  a.download = a.textContent = name;
+  resultURLs.push(a.href);
+  return a;
+}
+
+$('zip').onclick = async e => {
+  e.preventDefault();
+  const a = document.createElement('a');
+  a.href = blobURL(await call('zip'), 'application/zip');
+  a.download = 'ifgrad-results.zip';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+
+$('copyCitation').onclick = async () => {
+  try {
+    await navigator.clipboard.writeText($('citation').textContent);
+    $('copyCitation').textContent = 'Copied';
+  } catch {
+    $('copyCitation').textContent = 'Copy failed, select the text instead';
+  }
+  setTimeout(() => { $('copyCitation').textContent = 'Copy citation'; }, 2000);
+};
+
+function status(msg) { $('status').textContent = msg; }
+
+(async () => {
+  const list = await call('gradients');
+  $('gradient').replaceChildren(...list.map(g => {
+    bars[g.name] = blobURL(g.bar);
+    return new Option(g.label, g.name);
+  }));
+  status('');
+  syncGradient();
+  syncMode();
+})();
+</script>
+</body>
+</html>
+
